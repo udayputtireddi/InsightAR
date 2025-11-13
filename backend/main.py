@@ -3,14 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from transformers import pipeline
 from PIL import Image
 import io
-import fitz  # PyMuPDF for PDF text extraction
+import fitz  # PyMuPDF for PDF extraction
+import torch
+from transformers import Blip2Processor, Blip2ForConditionalGeneration
 
 # -------------------------------
 # App setup
 # -------------------------------
 app = FastAPI(title="InsightAR Backend")
 
-# Allow frontend (Next.js) to access backend
 origins = ["http://localhost:3000"]
 
 app.add_middleware(
@@ -21,52 +22,60 @@ app.add_middleware(
 )
 
 # -------------------------------
-# AI Models
+# 🚀 BLIP-2 Image Captioning (FLAN-T5-XL – FAST)
 # -------------------------------
+device = "mps" if torch.backends.mps.is_available() else "cpu"
 
-# Image Captioning Model
-model = pipeline("image-to-text", model="nlpconnect/vit-gpt2-image-captioning")
+processor = Blip2Processor.from_pretrained("Salesforce/blip2-flan-t5-xl")
+model = Blip2ForConditionalGeneration.from_pretrained(
+    "Salesforce/blip2-flan-t5-xl",
+    torch_dtype=torch.float16 if device != "cpu" else torch.float32,
+)
+model.to(device)
 
-# Document Summarization Model
+
+# -------------------------------
+# PDF Summarizer (Bart CNN)
+# -------------------------------
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
-# Question Answering Model (for text-based PDFs)
+# -------------------------------
+# Document Question Answering
+# -------------------------------
 qa_model = pipeline("question-answering", model="deepset/roberta-base-squad2")
 
 # -------------------------------
-# API Endpoints
+# 📸 Image Captioning Endpoint
 # -------------------------------
-
 @app.post("/analyze-image/")
 async def analyze_image(file: UploadFile = File(...)):
-    """
-    Accepts an image file and returns a caption.
-    """
-    image = Image.open(io.BytesIO(await file.read()))
-    result = model(image)
-    caption = result[0]["generated_text"]
+    image = Image.open(io.BytesIO(await file.read())).convert("RGB")
+
+    inputs = processor(
+        image,
+        return_tensors="pt"
+    ).to(device, torch.float16 if device != "cpu" else torch.float32)
+
+    generated_ids = model.generate(**inputs, max_length=50)
+    caption = processor.decode(generated_ids[0], skip_special_tokens=True)
+
     return {"caption": caption}
 
-
+# -------------------------------
+# 📄 PDF Summarization Endpoint
+# -------------------------------
 @app.post("/analyze-doc/")
 async def analyze_doc(file: UploadFile = File(...)):
-    """
-    Accepts a PDF document and returns a concise summary.
-    """
-    # Read uploaded PDF into memory
     pdf_bytes = await file.read()
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
 
-    # Extract text from all pages
     text = ""
     for page in doc:
         text += page.get_text("text")
     doc.close()
 
-    # Truncate long text (models have token limits)
     text = text[:4000]
 
-    # Summarize the extracted text
     summary = summarizer(
         text,
         max_length=200,
@@ -76,25 +85,21 @@ async def analyze_doc(file: UploadFile = File(...)):
 
     return {"summary": summary}
 
-
+# -------------------------------
+# 💬 PDF Q&A Endpoint
+# -------------------------------
 @app.post("/ask-doc/")
 async def ask_doc(file: UploadFile = File(...), question: str = Form(...)):
-    """
-    Accepts a PDF and a question, extracts text, and answers based on document content.
-    """
     pdf_bytes = await file.read()
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
 
-    # Extract text from all pages
     text = ""
     for page in doc:
         text += page.get_text("text")
     doc.close()
 
-    # Truncate to stay within token limits
     text = text[:4000]
 
-    # Get the answer using the QA model
     answer = qa_model(question=question, context=text)
 
     return {
