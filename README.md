@@ -50,6 +50,9 @@ It lets you:
 ---
 
 ✨ Vision Tools
+  - Image Captioning
+  - Image Understanding
+  - OCR Extraction
 
 📄 Document Tools
   - Summarization
