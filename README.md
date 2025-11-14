@@ -48,3 +48,17 @@ It lets you:
 - Runs DeBERTa v3 QA over those chunks for accurate answers
 
 ---
+
+✨ Vision Tools
+  - Image Captioning
+  - Image Understanding
+  - OCR Extraction
+
+📄 Document Tools
+  - Summarization
+  - PDF Q&A
+  - Extract Structured Data
+
+📦 Multi-modal Tools
+  - Image + PDF QA
+  - Vision+Text Analysis
