@@ -1,6 +1,6 @@
 # InsightAR
 
-InsightAR is a multimodal AI assistant that understands **images and PDF documents**.  
+InsightAR is a multimodal AI assistant that understands **images, PDF documents and multi-model tools**.  
 It lets you:
 
 - 🖼 Upload an image and get a **rich, BLIP-2-powered caption**
