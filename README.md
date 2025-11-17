@@ -18,9 +18,7 @@ It lets you:
 - Axios for API calls
 
 **Backend**
-- FastAPI (Python)
-- Uvicorn
-- PyMuPDF (`fitz`) for PDF text extraction
+
 
 **AI / ML**
 - `Salesforce/blip2-flan-t5-xl` for image captioning
