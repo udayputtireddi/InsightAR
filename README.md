@@ -9,7 +9,7 @@ It lets you:
 
 ---
 
-## Tech Stack
+## 
 
 **Frontend**
 - Next.js 16 (App Router)
