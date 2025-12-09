@@ -9,13 +9,7 @@ It lets you:
 
 ---
 
-## Tech Stack
 
-**Frontend**
-- Next.js 16 (App Router)
-- React, TypeScript
-- Tailwind CSS
-- Axios for API calls
 
 
 **Backend**
